@@ -16,6 +16,7 @@ Bugfixes
 - Automatic login will now get disabled if login fails
 - Fixed exceptions popping up related to corrupted replays
 - Logs will no longer fill to unreasonable sizes
+- Updater progress bar lag reduced
 - Many other small issues fixed
 
 
@@ -30,6 +31,7 @@ Contributors
 - Sheeo
 - Softly
 - Thygrr
+- duk3luk3
 
 0.10.123 (July 27, 2015)
 ========

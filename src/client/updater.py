@@ -58,8 +58,9 @@ class ClientUpdater(QObject):
             self._progress.close()
 
     def on_progress(self, current, max):
-        self._progress.setMaximum(max)
-        self._progress.setValue(current)
+        if current > self._progress.value() or self._progress.maximum() != max:
+            self._progress.setMaximum(max)
+            self._progress.setValue(current)
 
     def cancel(self):
         self._rep.abort()
