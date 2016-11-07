@@ -127,7 +127,11 @@ class StatsWidget(BaseClass, FormClass):
         formatter_header = self.FORMATTER_LADDER_HEADER
         glist = []
         append = glist.append
-        append("<table style='color:#3D3D3D' cellspacing='0' cellpadding='4' width='100%' height='100%'><tbody>")
+        append("<style>")
+#        append(".maintbl { color: #3D3D3D; margin-top: 0px; margin-bottom: 0px; margin-left: 0px; margin-right: 0px }")
+        append(".maintbl { color: #3D3D3D; margin-top: 100px; margin-bottom: 0px; }")
+        append("</style>")
+        append("<table class='maintbl' cellspacing='0' cellpadding='4'><tbody>")
         append(formatter_header.format(rank="rank", name="name", score="score", color="#92C1E4"))
 
         for val in values:
