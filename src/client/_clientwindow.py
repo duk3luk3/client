@@ -2,7 +2,7 @@ from functools import partial
 
 from PyQt4.QtCore import QUrl
 from PyQt4.QtGui import QLabel, QStyle
-from PyQt4.QtNetwork import QAbstractSocket
+from PyQt4.QtNetwork import QAbstractSocket, QNetworkReply
 
 import config
 import connectivity
@@ -1135,6 +1135,34 @@ class ClientWindow(FormClass, BaseClass):
         if self.remember and self.login and self.password:
             self.perform_login()
 
+    @QtCore.pyqtSlot(bool)
+    def whatsnewLoadFinished(self, ok):
+        if ok:
+            self.whatNewsView.page().mainFrame().evaluateJavaScript(
+                    """
+document.getElementById('header').style.visibility='hidden';
+document.getElementById('blogTerm').parentElement.parentElement.style.visibility='hidden';
+                    """
+                    )
+
+            logger.info("what's new loaded ok: " + str(self.whatNewsView.url()))
+        else:
+            logger.warn("what's new loaded fail: " + str(self.whatNewsView.url()))
+
+    @QtCore.pyqtSlot(QNetworkReply)
+    def whatsnewNAMFinish(self, reply):
+        if reply.error() != 0:
+            logger.warn(reply.error())
+            logger.warn(reply.errorString())
+            logger.warn(str(reply.url()))
+        else:
+            logger.debug('Finished loading without errors: ' + str(reply.url()))
+
+    @QtCore.pyqtSlot(QNetworkReply, list)
+    def whatsnewNAMHandleSslErrors(self, reply, errors):
+        logger.warning('webview ssl error! ' + "/".join([str(x) for x in errors]))
+        reply.ignoreSslErrors()
+
     @QtCore.pyqtSlot()
     def perform_login(self):
         self.uniqueId = util.uniqueID(self.login, self.session)
@@ -1182,14 +1210,11 @@ class ClientWindow(FormClass, BaseClass):
             fa.upnp.createPortMapping(self.socket.localAddress().toString(), self.gamePort, "UDP")
 
         # update what's new page
-        self.whatNewsView.loadFinished.connect(lambda x: self.whatNewsView.page().mainFrame()
-                .evaluateJavaScript(
-                    """
-document.getElementById('header').style.visibility='hidden';
-document.getElementById('blogTerm').parentElement.parentElement.style.visibility='hidden';
-                    """
-                    ))
-        self.whatNewsView.setUrl(QtCore.QUrl("https://www.faforever.com/news"))
+        self.whatNewsView.setUrl(QtCore.QUrl(Settings.get('WEBSITE_URL') + '/news'))
+        self.whatNewsView.loadFinished.connect(self.whatsnewLoadFinished)
+        self.whatNewsView.page().networkAccessManager().finished.connect(self.whatsnewNAMFinish)
+        self.whatNewsView.page().networkAccessManager().sslErrors.connect(self.whatsnewNAMHandleSslErrors)
+        logger.debug("Set what's new url to " + str(self.whatNewsView.url()))
 
         self.updateOptions()
 
