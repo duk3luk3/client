@@ -1182,7 +1182,7 @@ class ClientWindow(FormClass, BaseClass):
             fa.upnp.createPortMapping(self.socket.localAddress().toString(), self.gamePort, "UDP")
 
         # update what's new page
-        self.whatNewsView.setUrl(QtCore.QUrl("https://www.faforever.com/news"))
+        self.whatNewsView.setUrl(QtCore.QUrl(Settings.get("WEBSITE_URL") + '/news'))
 
         self.updateOptions()
 

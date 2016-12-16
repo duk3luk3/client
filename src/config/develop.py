@@ -11,3 +11,4 @@ else:
 
 defaults = production_defaults.copy()
 defaults['host'] = 'test.faforever.com'
+defaults['WEBSITE_URL'] = 'http://test.faforever.com'
