@@ -1210,7 +1210,9 @@ document.getElementById('blogTerm').parentElement.parentElement.style.visibility
             fa.upnp.createPortMapping(self.socket.localAddress().toString(), self.gamePort, "UDP")
 
         # update what's new page
+        logger.debug("Setting what's new page url")
         self.whatNewsView.setUrl(QtCore.QUrl(Settings.get('WEBSITE_URL') + '/news'))
+        logger.debug("Connecting signals")
         self.whatNewsView.loadFinished.connect(self.whatsnewLoadFinished)
         self.whatNewsView.page().networkAccessManager().finished.connect(self.whatsnewNAMFinish)
         self.whatNewsView.page().networkAccessManager().sslErrors.connect(self.whatsnewNAMHandleSslErrors)
