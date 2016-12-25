@@ -603,6 +603,7 @@ def uniqueID(user, session):
         logger.error("UniqueID error finding the executable: {}".format(err))
     except subprocess.CalledProcessError as exc:
         logger.error("UniqueID executable error: {}".format(exc.output))
+        logger.error("UniqueID Trace", exc_info=True)
     return None
 
 
