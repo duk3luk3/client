@@ -598,7 +598,7 @@ def uniqueID(user, session):
             QMessageBox.critical(None, "WMI service missing", "FAF requires the 'Windows Management Instrumentation' service for smurf protection. This service could not be found.")
     try:
         # on error, the uid exe returns 1 which will result in a CalledProcessError exception
-        return subprocess.check_output(["faf-uid", session], env=env)
+        return subprocess.check_output(["faf-uid", session], env=env, stderr=subprocess.STDOUT)
     except OSError as err:
         logger.error("UniqueID error finding the executable: {}".format(err))
     except subprocess.CalledProcessError as exc:
