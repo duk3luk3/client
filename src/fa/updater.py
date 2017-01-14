@@ -70,7 +70,6 @@ def clearLog():
 
 
 def log(string):
-    logger.debug(string)
     debugLog.append(unicode(string))
 
 
@@ -158,6 +157,7 @@ class Updater(QtCore.QObject):
 
     def run(self, *args, **kwargs):
         clearLog()
+        logger.debug("Update started at " + timestamp() + "; using appdata: " + util.APPDATA_DIR)
         log("Update started at " + timestamp())
         log("Using appdata: " + util.APPDATA_DIR)
 
@@ -178,6 +178,7 @@ class Updater(QtCore.QObject):
             QtGui.QApplication.processEvents()
 
         if not self.progress.wasCanceled():
+            logger.debug("Connected to update server at " + timestamp())
             log("Connected to update server at " + timestamp())
 
             self.doUpdate()
@@ -186,9 +187,11 @@ class Updater(QtCore.QObject):
             self.updateSocket.close()
             self.progress.close()
         else:
+            logger.debug("Cancelled connecting to server.")
             log("Cancelled connecting to server.")
             self.result = self.RESULT_CANCEL
 
+        logger.debug("Update finished at " + timestamp())
         log("Update finished at " + timestamp())
         return self.result
 
@@ -346,6 +349,7 @@ class Updater(QtCore.QObject):
 
             QtGui.QApplication.processEvents()
 
+        logger.debug("Files to update: [" + ', '.join(self.filesToUpdate) + "]")
         log("Files to update: [" + ', '.join(self.filesToUpdate) + "]")
 
 
@@ -371,6 +375,7 @@ class Updater(QtCore.QObject):
 
             QtGui.QApplication.processEvents()
 
+        logger.debug("Updates applied successfully.")
         log("Updates applied successfully.")
 
     def prepareBinFAF(self):
@@ -426,12 +431,15 @@ class Updater(QtCore.QObject):
                     self.updateFiles("gamedata", self.featured_mod + "Gamedata")
 
         except UpdaterTimeout, e:
+            logger.warning("TIMEOUT: {}".format(e))
             log("TIMEOUT: {}".format(e))
             self.result = self.RESULT_FAILURE
         except UpdaterCancellation, e:
+            logger.info("CANCELLED: {}".format(e))
             log("CANCELLED: {}".format(e))
             self.result = self.RESULT_CANCEL
         except Exception, e:
+            logger.exception("Exception in doUpdate")
             log("EXCEPTION: {}".format(e))
             self.result = self.RESULT_FAILURE
         else:

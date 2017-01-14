@@ -104,14 +104,17 @@ def getDisplayName(filename):
     Tries to return a pretty name for the map (for official maps, it looks up the name)
     For nonofficial maps, it tries to clean up the filename
     '''
-    if str(filename) in maps:
-        return maps[filename][0]
-    else:
-        #cut off ugly version numbers, replace "_" with space.
-        pretty = filename.rsplit(".v0", 1)[0]
-        pretty = pretty.replace("_", " ")
-        pretty = string.capwords(pretty)
-        return pretty
+    try:
+        if str(filename) in maps:
+            return maps[filename][0]
+        else:
+            #cut off ugly version numbers, replace "_" with space.
+            pretty = filename.rsplit(".v0", 1)[0]
+            pretty = pretty.replace("_", " ")
+            pretty = string.capwords(pretty)
+            return pretty
+    except:
+        logger.exception("Error in getDisplayName {}".format(filename))
 
 def name2link(name):
     '''
