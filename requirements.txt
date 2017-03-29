@@ -1,5 +1,6 @@
 cx_Freeze==5.0.2
 ipaddress
+oauthlib
 pathlib
 pyqt5
 pytest

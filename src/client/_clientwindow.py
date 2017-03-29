@@ -1,5 +1,11 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
+from functools import partial
 
+from PyQt5.QtCore import QUrl, QProcess
+from PyQt5.QtWidgets import QLabel, QMessageBox
+from PyQt5.QtNetwork import QNetworkAccessManager
+
+import api
 import config
 import connectivity
 from connectivity.helper import ConnectivityHelper
@@ -194,7 +200,14 @@ class ClientWindow(FormClass, BaseClass):
         self.connectivity = None  # type: ConnectivityHelper
 
         # stat server
-        self.statsServer = SecondaryServer("Statistic", 11002, self.lobby_dispatch)
+        # obsolete
+        #self.statsServer = secondaryServer.SecondaryServer("Statistic", 11002, self.lobby_dispatch)
+
+
+        apisettings = api.ApiSettings()
+        nm = QNetworkAccessManager(self)
+        self.ApiManager = api.ApiManager(nm, apisettings, api.OAuthHandler(apisettings))
+        self.Api = api.Api(self.ApiManager)
 
         # create user interface (main window) and load theme
         self.setupUi(self)
@@ -935,7 +948,7 @@ class ClientWindow(FormClass, BaseClass):
     def get_creds_and_login(self):
         # Try to autologin, or show login widget if we fail or can't do that.
         if self._autorelogin and self.password and self.login:
-            if self.send_login(self.login, self.password):
+            if self.send_login(self.login, self.password, True):
                 return
 
         self.show_login_widget()
@@ -950,7 +963,7 @@ class ClientWindow(FormClass, BaseClass):
 
     def on_widget_login_data(self, login, password):
         self.login = login
-        self.password = password
+        self.password = util.password_hash(password)
 
         if self.send_login(login, password):
             return
@@ -959,14 +972,23 @@ class ClientWindow(FormClass, BaseClass):
     def on_widget_no_login(self):
         self.disconnect()
 
+
     def on_login_widget_quit(self):
         QtWidgets.QApplication.quit()
 
-    def send_login(self, login, password):
+    def send_login(self, login, password, is_hashed=False):
         # Send login data once we have the creds.
         self._autorelogin = False # Fresh credentials
-        if config.is_beta():  # Replace for develop here to not clobber the real pass
-            password = util.password_hash("foo")
+        if config.is_beta():    # Replace for develop here to not clobber the real pass
+            password = "foo"
+            is_hashed = False
+
+        if is_hashed:
+            hashed_pw = password
+            password = None
+        else:
+            hashed_pw = util.password_hash(password)
+
         self.uniqueId = util.uniqueID(self.login, self.session)
         if not self.uniqueId:
             QtWidgets.QMessageBox.critical(self,
@@ -977,9 +999,10 @@ class ClientWindow(FormClass, BaseClass):
             return False
         self.lobby_connection.send(dict(command="hello",
                                         login=login,
-                                        password=password,
+                                        password=hashed_pw,
                                         unique_id=self.uniqueId,
                                         session=self.session))
+        self.ApiManager.authorize(login, password)
         return True
 
     @QtCore.pyqtSlot()
