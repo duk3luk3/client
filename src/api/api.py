@@ -1,4 +1,3 @@
-import urllib.parse
 from PyQt4 import QtNetwork
 from util import logger
 import json
@@ -9,7 +8,7 @@ class Api(object):
     def __init__(self, manager):
         self._manager = manager
 
-    def _recvReply(self, reply, cb, error_cb = lambda _: pass):
+    def _recvReply(self, reply, cb, error_cb = lambda _: None):
         def _error(text):
             logger.warn(text)
             error_cb(text) # FIXME
@@ -28,36 +27,39 @@ class Api(object):
             return _error("API parse error!")
         return cb(resp)
 
-    def _get(self, endpoint, params, cb):
-        req = QtNetwork.QNetworkRequest()
-        paramstr = urllib.parse.urlencode(params)
-        newept = endpoint + "?" + paramstr
-        return self._manager.get(newept, req, lambda r: self._recvReply(r, cb))
+    # QUrl already escapes query for us, so just concatenate
+    @staticmethod
+    def _query(endpt, params):
+        return endpt + "?" + "&".join(str(key) + "=" + str(params[key]) for key in params)
 
-    def _getPage(self, endpoint, pagesize, pagenum, params, cb):
+    def _get(self, endpoint, cb, params = {}):
+        req = QtNetwork.QNetworkRequest()
+        query = self._query(endpoint, params)
+        return self._manager.get(query, req, lambda r: self._recvReply(r, cb))
+
+    def _getPage(self, endpoint, pagesize, pagenum, cb, params = {}):
         params["page[size]"] = pagesize
         params["page[number]"] = pagenum
-        return self._get(endpoint, params, cb)
+        return self._get(endpoint, cb, params)
 
-    def _getMany(self, endpoint, count, params, cb):
-        ret = []
-        page = 1
-        def getMore(resp):
-            if not isinstance(resp, list):
+    def _getMany(self, endpoint, count, cb, params = {}):
+        def getMore(ret, page, resp):
+            data = resp["data"]
+            if not isinstance(data, list):
                 return
-            ret += resp
-            if resp and len(ret) < count:
-                page += 1
-                self._getPage(endpoint, count, page, params, getMore)
+            ret += data
+            if data and len(ret) < count:
+                self._getPage(endpoint, count, page,
+                              lambda r: getMore(ret, page + 1, r), params)
             else:
                 cb(ret)
 
-        self._getPage(endpoint, count, page, params, getMore)
+        self._getPage(endpoint, count, 1, lambda r: getMore([], 2, r), params)
 
-    def _getAll(self, endpoint, params, cb):
-        return self._getMany(self, endpoint, MAX_PAGE_SIZE, params, cb)
+    def _getAll(self, endpoint, cb, params = {}):
+        return self._getMany(endpoint, self.MAX_PAGE_SIZE, cb, params)
 
-    def _post(self, endpoint, data, cb, err_cb):
+    def _post(self, endpoint, data, cb, err_cb = lambda _: None):
         req = QtNetwork.QNetworkRequest()
         return self._manager.post(endpoint, req, data,
                                   lambda r: self._recvReply(r, cb, err_cb))

@@ -80,7 +80,7 @@ class OAuthHandler(object):
         url = str(request.url())
         try:
             _, auth_header, _ = self._client.add_token(url,
-                                               token_placement='AUTH_HEADER',
+                                               token_placement='auth_header',
                                                http_method = http_method)
         except TokenExpiredError:
             # FIXME - this is an oauth quirk, maybe we're better off checking
@@ -108,9 +108,9 @@ class RequestQueue(object):
 
     def process(self):
         while self.isReady() and self._queue:
-            fn = self._op_queue.pop(0)
+            fn = self._queue.pop(0)
             if fn():
-                self._op_queue.append(fn)
+                self._queue.append(fn)
 
     def append(self, fn):
         self._queue.append(fn)
@@ -185,6 +185,8 @@ class ApiManager(object):
 # FIXME - turn everything below into unit tests
 
 from PyQt4.QtGui import QApplication
+import sys
+import api
 
 class MockSettings(object):
     def __init__(self):
@@ -197,6 +199,11 @@ class MockSettings(object):
 LOGIN="test"
 PASSWORD="test_password"
 
+def doTest(body):
+    print "Received!"
+    print body
+    sys.exit(0)
+
 def testLogin():
     a = QApplication([])
     settings = MockSettings()
@@ -204,6 +211,8 @@ def testLogin():
     am = QtNetwork.QNetworkAccessManager()
     manager = ApiManager(am, settings, oauth)
     manager.authorize(LOGIN, PASSWORD)
+    faf_api = api.Api(manager)
+    faf_api._getAll("/data/featuredMod", doTest)
     a.exec_()
 
 if __name__ == "__main__":
