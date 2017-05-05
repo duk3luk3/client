@@ -1,10 +1,11 @@
 from oauthlib.oauth2 import LegacyApplicationClient, OAuth2Error, \
-    InsecureTransportError, TokenExpiredError
+    TokenExpiredError
 from PyQt4 import QtNetwork
 from PyQt4.QtCore import QObject, pyqtSignal, QUrl
 import base64
 import json
 from util import logger
+from api.request import ApiRequest
 
 
 class ApiSettings(object):
@@ -94,54 +95,6 @@ class OAuthHandler(object):
 
     def hasToken(self):
         return self._hasToken
-
-
-# Api request that can get queued until we get authorized.
-class ApiRequest(QObject):
-    finished = pyqtSignal(object)
-    error = pyqtSignal()
-
-    def __init__(self, manager, request, http_op, opname, auth):
-        QObject.__init__(self)
-        self._manager = manager
-        self._req = request
-        self._op = http_op
-        self._opname = opname
-        self._rep = None
-        self._auth = auth
-
-    def run(self):
-        if not self._auth or self._manager.is_authorized():
-            self.send_request()
-        else:
-            self._manager.authorized.connect(self.at_auth)
-
-    def send_request(self):
-        self._rep = self._op(self._req)
-        self._rep.error.connect(self.on_error)
-        self._rep.finished.connect(self.on_finish)
-
-    def at_auth(self):
-        self._manager.authorized.disconnect(self.at_auth)
-        try:
-            self._manager.oauth.addToken(self._req, self._opname)
-        except (TokenExpiredError, InsecureTransportError):
-            self.error.emit()
-            return
-        self.send_request()
-
-    def on_error(self):
-        self._rep.error.disconnect()
-        self._rep.finished.disconnect()
-        self.error.emit()
-
-    def on_finish(self):
-        try:
-            resp = json.loads(str(self._rep.readAll()))
-        except ValueError:
-            self.error.emit()
-        self.finished.emit(resp)
-
 
 class ApiManager(QObject):
     """

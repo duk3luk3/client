@@ -1,51 +1,6 @@
 from PyQt4 import QtNetwork
-from PyQt4.QtCore import QObject, pyqtSignal, QUrl
-
-
-class ApiListRequest(QObject):
-    finished = pyqtSignal(object)
-    error = pyqtSignal()
-
-    def __init__(self, requests, count):
-        QObject.__init__(self)
-        self._reqs = requests
-        self._nextreq = None
-        self._result = []
-        self._count = count
-
-    def run(self):
-        self._run_next_req()
-
-    def _run_next_req(self):
-        try:
-            self._nextreq = next(self._reqs)
-        except StopIteration:
-            self.finished.emit(self._result)
-            return
-        self._nextreq.finished.connect(self._at_finished)
-        self._nextreq.error.connect(self._at_error)
-        self._nextreq.run()
-
-    def _at_finished(self, values):
-        if not values:
-            self.finished.emit(self._result)
-            return
-        if not isinstance(values, list):
-            self.at_error()
-            return
-
-        if len(self._result) + len(values) >= self._count:
-            values = values[:self._count - len(self._result)]
-
-        self._result += values
-        if len(self._result) >= self._count:
-            self.finished.emit(self._result)
-            return
-        self._run_next_req()
-
-    def _at_error(self):
-        self._nextreq = None
-        self.error.emit()
+from PyQt4.QtCore import QUrl
+from api.request import ApiListRequest
 
 
 class Api(object):
