@@ -56,9 +56,9 @@ class OAuthHandler(object):
         self._rep.error.connect(self._onError)
         self._rep.run()
 
-    def _onError(self):
+    def _onError(self, text):
         self._rep = None
-        self._manager.onAuthorizeError()
+        self._manager.onAuthorizeError(text)
 
     def _onAuthorizedResponse(self, reply):
         self._rep = None
@@ -66,7 +66,7 @@ class OAuthHandler(object):
             body = json.dumps(reply)    # FIXME
             self._client.parse_request_body_response(body)
         except OAuth2Error:
-            return self._onError()
+            return self._onError("Failed to parse oauth: " + json.dumps(reply))
 
         self._hasToken = True
         self._manager.onAuthorized()
@@ -120,8 +120,8 @@ class ApiManager(QObject):
     def is_authorized(self):
         return self.oauth.hasToken()
 
-    def onAuthorizeError(self):     # TODO
-        pass
+    def onAuthorizeError(self, text):     # TODO
+        print(text)
 
     def _op(self, endpoint, request, httpOp, opName, auth=True):
         request.setUrl(QUrl(self._settings.baseUrl).resolved(endpoint))
