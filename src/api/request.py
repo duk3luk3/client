@@ -75,17 +75,23 @@ class ApiListRequest(QObject):
         self._nextreq.run()
 
     def _at_finished(self, values):
-        if not values:
+        if not isinstance(values, dict) or "data" not in values:
+            self._at_error()
+            return
+        items = values["data"]
+
+        if not isinstance(items, list):
+            self._at_error()
+            return
+
+        if len(items) == 0:
             self.finished.emit(self._result)
             return
-        if not isinstance(values, list):
-            self.at_error()
-            return
 
-        if len(self._result) + len(values) >= self._count:
-            values = values[:self._count - len(self._result)]
+        if len(self._result) + len(items) >= self._count:
+            items = items[:self._count - len(self._result)]
 
-        self._result += values
+        self._result += items
         if len(self._result) >= self._count:
             self.finished.emit(self._result)
             return

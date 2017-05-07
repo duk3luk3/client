@@ -1,6 +1,6 @@
 from PyQt4 import QtNetwork
 from PyQt4.QtCore import QUrl
-from api.request import ApiListRequest
+from request import ApiListRequest
 
 
 class Api(object):

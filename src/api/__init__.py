@@ -4,8 +4,7 @@ from PyQt4 import QtNetwork
 from PyQt4.QtCore import QObject, pyqtSignal, QUrl
 import base64
 import json
-from util import logger
-from api.request import ApiRequest
+from request import ApiRequest
 
 
 class ApiSettings(object):
@@ -29,6 +28,7 @@ class OAuthHandler(object):
         self._client = LegacyApplicationClient(self._settings.clientId)
         self._manager = None
         self._hasToken = False
+        self._rep = None
 
     @property
     def apiManager(self):
@@ -50,35 +50,33 @@ class OAuthHandler(object):
         body = self._client.prepare_request_body(
             username=username,
             password=password)
-        rep = self._manager.post(QUrl(self._settings.accessTokenUri), req,
-                                 body, auth=False)
-        rep.finished.connect(self._onAuthorizedResponse)
-        rep.error.connect(self._onAuthorizedResponse)
-        rep.run()
+        self._rep = self._manager.post(QUrl(self._settings.accessTokenUri),
+                                       req, body, auth=False)
+        self._rep.finished.connect(self._onAuthorizedResponse)
+        self._rep.error.connect(self._onError)
+        self._rep.run()
+
+    def _onError(self):
+        self._rep = None
+        self._manager.onAuthorizeError()
 
     def _onAuthorizedResponse(self, reply):
-            def _error(text):
-                logger.warn(text)
-                self._manager.onAuthorizeError()
+        self._rep = None
+        try:
+            body = json.dumps(reply)    # FIXME
+            self._client.parse_request_body_response(body)
+        except OAuth2Error:
+            return self._onError()
 
-            if reply.error() != QtNetwork.QNetworkReply.NoError:
-                return _error("OAuth network error! " + str(reply.error()))
-
-            try:
-                body = json.dumps(reply)    # FIXME
-                self._client.parse_request_body_response(body)
-            except OAuth2Error:
-                return _error("OAuth response parse error!")
-
-            self._hasToken = True
-            self._manager.onAuthorized()
+        self._hasToken = True
+        self._manager.onAuthorized()
 
     def addToken(self, request, http_method):
         """
         Adds the token to request headers. If the token expired, does not
         modify request.
         """
-        url = str(request.url())
+        url = str(request.url().toString())
         try:
             _, auth_header, _ = self._client.add_token(
                 url,
@@ -95,6 +93,7 @@ class OAuthHandler(object):
 
     def hasToken(self):
         return self._hasToken
+
 
 class ApiManager(QObject):
     """
@@ -153,14 +152,14 @@ import api
 
 class MockSettings(object):
     def __init__(self):
-        self.baseUrl = 'http://localhost:8010'
+        self.baseUrl = 'https://api.dev.faforever.com'
         self.accessTokenUri = '/oauth/token'
-        self.clientId = 'faf-client'
-        self.clientSecret = 'banana'
+        self.clientId = '3bc8282c-7730-11e5-8bcf-feff819cdc9f'
+        self.clientSecret = '6035bd78-7730-11e5-8bcf-feff819cdc9f'
 
 
-LOGIN = "test"
-PASSWORD = "test_password"
+LOGIN = "YourLogin"
+PASSWORD = "YourPassword"
 
 
 def doTest(body):
