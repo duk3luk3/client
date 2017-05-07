@@ -51,7 +51,7 @@ class ApiRequest(QObject):
         self.error.emit(ret)
 
     def on_ssl_errors(self, errors):
-        self._ssl_errors = errors
+        self._ssl_errors = [e.errorString() for e in errors]
 
     def on_finish(self):
         try:
