@@ -37,10 +37,11 @@ class ApiRequest(QObject):
             return
         self.send_request()
 
-    def on_error(self):
+    def on_error(self, error):
         self._rep.error.disconnect()
         self._rep.finished.disconnect()
-        self.error.emit("Reply error: " + str(self._rep.readAll()))
+        data = str(self._rep.readAll())
+        self.error.emit("Reply error {}: {}".format(error, data))
 
     def on_finish(self):
         try:
