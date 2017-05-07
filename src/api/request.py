@@ -16,6 +16,7 @@ class ApiRequest(QObject):
         self._opname = opname
         self._rep = None
         self._auth = auth
+        self._ssl_errors = None
 
     def run(self):
         if not self._auth or self._manager.is_authorized():
@@ -26,6 +27,7 @@ class ApiRequest(QObject):
     def send_request(self):
         self._rep = self._op(self._req)
         self._rep.error.connect(self.on_error)
+        self._rep.sslErrors.connect(self.on_ssl_errors)
         self._rep.finished.connect(self.on_finish)
 
     def at_auth(self):
@@ -39,9 +41,17 @@ class ApiRequest(QObject):
 
     def on_error(self, error):
         self._rep.error.disconnect()
+        self._rep.sslErrors.disconnect()
         self._rep.finished.disconnect()
+
         data = str(self._rep.readAll())
-        self.error.emit("Reply error {}: {}".format(error, data))
+        ret = "Reply error {}: {}".format(error, data)
+        if self._ssl_errors:
+            ret += "\nSSL errors encountered: {}".format(self._ssl_errors)
+        self.error.emit(ret)
+
+    def on_ssl_errors(self, errors):
+        self._ssl_errors = errors
 
     def on_finish(self):
         try:
