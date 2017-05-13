@@ -91,6 +91,7 @@ def checkMovies(files):
     gd = os.path.join(util.APPDATA_DIR, 'gamedata')
 
     for fname in files:
+        logger.info('checking {}'.format(fname))
         origpath = os.path.join(gd, fname)
 
         if os.path.exists(origpath) and zipfile.is_zipfile(origpath):
@@ -101,10 +102,13 @@ def checkMovies(files):
                 continue
 
             for zi in zf.infolist():
+                logger.info('Checking file for movie: {}'.format(zi.filename))
                 if zi.filename.startswith('movies'):
+                    logger.info('Found movie')
                     tgtpath = os.path.join(util.APPDATA_DIR, zi.filename)
                     # copy only if file is different - check first if file exists, then if size is changed, then crc
                     if not os.path.exists(tgtpath) or os.stat(tgtpath).st_size != zi.file_size or crc32(tgtpath) != zi.CRC:
+                        logger.info('Extracting movie')
                         zf.extract(zi, util.APPDATA_DIR)
 
 def check(featured_mod, mapname=None, version=None, modVersions=None, sim_mods=None, silent=False):
