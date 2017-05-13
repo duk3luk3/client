@@ -609,7 +609,13 @@ class Updater(QtCore.QObject):
     def applyPatch(self, original, patch):
         toFile = os.path.join(util.CACHE_DIR, "patchedFile")
         #applying delta
-        subprocess.call(['xdelta3', '-d','-f', '-s', original, patch, toFile], stdout = subprocess.PIPE)
+        try:
+            xdelta_out = subprocess.check_output(['xdelta3', '-d','-f', '-s', original, patch, toFile], stderr=subprocess.STDOUT)
+            logger.info(xdelta_out)
+        except subprocess.CalledProcessError as e:
+            logger.exception('xdelta failed.')
+            logger.info(e.output)
+
         shutil.copy(toFile, original)
         os.remove(toFile)
         os.remove(patch)
