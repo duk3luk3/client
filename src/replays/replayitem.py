@@ -8,6 +8,8 @@ from config import Settings
 from fa import maps
 from games.moditem import mods
 
+import logging
+logger = logging.getLogger(__name__)
 
 class ReplayItemDelegate(QtGui.QStyledItemDelegate):
     
@@ -120,6 +122,8 @@ class ReplayItem(QtGui.QTreeWidgetItem):
         """ Updates this item from the message dictionary supplied """
         
         self.client = client
+
+        logger.info(message)
         
         self.name      = message["name"]
         self.mapname   = message["map"]
