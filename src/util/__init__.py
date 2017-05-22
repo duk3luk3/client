@@ -669,7 +669,17 @@ def md5(file_name):
 def uniqueID(user, session):
     ''' This is used to uniquely identify a user's machine to prevent smurfing. '''
     env = os.environ
-    env['PATH'] += os.pathsep + os.getcwd() # the Windows setup places executables in the root/CWD
+
+    if 'PATH' not in env:
+        logger.warn('PATH is empty - Full Env follows:')
+        for key, val in env.items():
+            logger.info("  {:32}: {}".format(key, val))
+        logger.info('End of PATH dump')
+        env['PATH'] = ''
+    else:
+        env['PATh'] += os.pathsep
+
+    env['PATH'] += os.getcwd() # the Windows setup places executables in the root/CWD
     env['PATH'] += os.pathsep + os.path.join(os.getcwd(), "lib") # the default download location for travis/Appveyor
     # the UID check needs the WMI service running on Windows
     if sys.platform == 'win32':
