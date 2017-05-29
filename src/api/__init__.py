@@ -109,6 +109,17 @@ class ApiManager(QObject):
         self.oauth = oauth
         self.oauth.apiManager = self
         self._ssl_conf = QtNetwork.QSslConfiguration()
+        print(len(self._ssl_conf.caCertificates()))
+        cacerts = QtNetwork.QSslCertificate.fromPath("/home/luke/scratch/lechain/ISRGRootX1.pem", QtNetwork.QSsl.Pem)
+        cacerts += QtNetwork.QSslCertificate.fromPath("/home/luke/scratch/lechain/lets-encrypt-x3-cross-signed.pem", QtNetwork.QSsl.Pem)
+        for cert in cacerts:
+            print(cert.issuerInfo(QtNetwork.QSslCertificate.Organization))
+        #self._ssl_conf.setCaCertificates(cacerts)
+        #self._ssl_conf.setPeerVerifyDepth(5)
+        print(len(self._ssl_conf.caCertificates()))
+
+        QtNetwork.QSslSocket.addDefaultCaCertificates(cacerts)
+
         self._ssl_conf.setProtocol(QtNetwork.QSsl.TlsV1)
 
     def authorize(self, username, password):
@@ -126,6 +137,7 @@ class ApiManager(QObject):
     def _op(self, endpoint, request, httpOp, opName, auth=True):
         request.setUrl(QUrl(self._settings.baseUrl).resolved(endpoint))
         request.setSslConfiguration(self._ssl_conf)
+        print(len(request.sslConfiguration().caCertificates()))
 
         return ApiRequest(self, request, httpOp, opName, auth)
 
@@ -158,8 +170,8 @@ class MockSettings(object):
         self.clientSecret = '6035bd78-7730-11e5-8bcf-feff819cdc9f'
 
 
-LOGIN = "YourLogin"
-PASSWORD = "YourPassword"
+LOGIN = "OppressiveDuke"
+PASSWORD = "I12beBilG8s!"
 
 
 def doTest(body):

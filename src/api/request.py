@@ -26,6 +26,9 @@ class ApiRequest(QObject):
 
     def send_request(self):
         self._rep = self._op(self._req)
+        sslcf = self._rep.sslConfiguration()
+        print('rep sslcerts:', len(sslcf.caCertificates()))
+        print('rep verify depth:', sslcf.peerVerifyDepth())
         self._rep.error.connect(self.on_error)
         self._rep.sslErrors.connect(self.on_ssl_errors)
         self._rep.finished.connect(self.on_finish)
@@ -43,6 +46,12 @@ class ApiRequest(QObject):
         self._rep.error.disconnect()
         self._rep.sslErrors.disconnect()
         self._rep.finished.disconnect()
+
+        sslcf = self._rep.sslConfiguration()
+        pc = sslcf.peerCertificate()
+        print('rep peer cert:', str(pc.serialNumber()))
+        for i in range(6):
+            print(pc.issuerInfo(i))
 
         data = str(self._rep.readAll())
         ret = "Reply error {}: {}".format(error, data)
