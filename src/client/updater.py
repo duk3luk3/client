@@ -45,6 +45,8 @@ class GithubUpdateChecker(QObject):
 
 @with_logger
 class ClientUpdater(QObject):
+    updates_ignore = Settings.persisted_property('updater/ignored_updates', default_value = [])
+
     def __init__(self):
         QObject.__init__(self)
         self._progress = None
@@ -83,16 +85,27 @@ class ClientUpdater(QObject):
                         )
                     )
                 }
+
+        if not self._outdated and url in self.updates_ignore:
+            return
+
+        buttons = QtGui.QMessageBox.No | QtGui.QMessageBox.Yes
+
+        if not self._outdated:
+            buttons = buttons | QtGui.QMessageBox.Ignore
+
         result = QtGui.QMessageBox.question(None,
                                             update_msg[self._outdated][0],
                                             update_msg[self._outdated][1],
-                                            QtGui.QMessageBox.No,
+                                            buttons,
                                             QtGui.QMessageBox.Yes)
         if result == QtGui.QMessageBox.Yes:
             self._logger.info('Downloading {}'.format(url))
             self._setup_progress()
             self._prepare_download(url)
             self._progress.show()
+        elif result == QtGui.QMessageBox.Ignore:
+            self.updates_ignore = self.updates_ignore + [url]
         elif self._outdated:
             QtGui.QApplication.quit()
 
