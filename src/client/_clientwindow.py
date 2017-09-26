@@ -505,15 +505,15 @@ class ClientWindow(FormClass, BaseClass):
 
     def setup(self):
         import chat
-        import tourneys
-        import stats
-        import vault
+#        import tourneys
+#        import stats
+#        import vault
         import games
         import tutorials
         import downloadManager
         import modvault
         import coop
-        import news
+#        import news
         from chat._avatarWidget import avatarWidget
 
         # download manager
@@ -528,11 +528,11 @@ class ClientWindow(FormClass, BaseClass):
         chat.CHAT_COLORS = json.loads(util.THEME.readfile("client/colors.json"))
 
         # build main window with the now active client
-        self.news = news.NewsWidget(self)
-        self.ladder = stats.Stats(self)
+        #self.news = news.NewsWidget(self)
+        #self.ladder = stats.Stats(self)
         self.games = games.Games(self, self.gameset, self.me)
-        self.tourneys = tourneys.Tourneys(self)
-        self.vault = vault.MapVault(self)
+        #self.tourneys = tourneys.Tourneys(self)
+        #self.vault = vault.MapVault(self)
         self.modvault = modvault.ModVault(self)
         self.replays = replays.Replays(self, self.lobby_dispatch, self.gameset)
         self.tutorials = tutorials.Tutorials(self)
@@ -541,11 +541,11 @@ class ClientWindow(FormClass, BaseClass):
 
         # TODO: some day when the tabs only do UI we'll have all this in the .ui file
         self.chatTab.layout().addWidget(self.chat)
-        self.whatNewTab.layout().addWidget(self.news)
-        self.ladderTab.layout().addWidget(self.ladder)
+        #self.whatNewTab.layout().addWidget(self.news)
+        #self.ladderTab.layout().addWidget(self.ladder)
         self.gamesTab.layout().addWidget(self.games)
-        self.tourneyTab.layout().addWidget(self.tourneys)
-        self.mapsTab.layout().addWidget(self.vault.ui)
+        #self.tourneyTab.layout().addWidget(self.tourneys)
+        #self.mapsTab.layout().addWidget(self.vault.ui)
         self.modsTab.layout().addWidget(self.modvault)
         self.replaysTab.layout().addWidget(self.replays)
         self.tutorialsTab.layout().addWidget(self.tutorials)
@@ -562,7 +562,7 @@ class ClientWindow(FormClass, BaseClass):
 
         # units database (ex. live streams)
         # old unitDB
-        self.unitdbWebView.setUrl(QtCore.QUrl("http://direct.faforever.com/faf/unitsDB"))
+        #self.unitdbWebView.setUrl(QtCore.QUrl("http://direct.faforever.com/faf/unitsDB"))
         # spookys unitDB (will be moved to site)
         # self.unitdbWebView.setUrl(QtCore.QUrl("http://spooky.github.io/unitdb/#/"))
 
@@ -996,11 +996,15 @@ class ClientWindow(FormClass, BaseClass):
         old_tab = tab.widget(prev)
 
         if old_tab is not None:
-            tab = old_tab.layout().itemAt(0).widget()
+            tab = old_tab.layout().itemAt(0)
+            if tab:
+                tab = tab.widget()
             if isinstance(tab, BusyWidget):
                 tab.busy_left()
         if new_tab is not None:
-            tab = new_tab.layout().itemAt(0).widget()
+            tab = new_tab.layout().itemAt(0)
+            if tab:
+                tab = tab.widget()
             if isinstance(tab, BusyWidget):
                 tab.busy_entered()
 

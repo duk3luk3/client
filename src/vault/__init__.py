@@ -1,7 +1,8 @@
-from PyQt5 import QtCore, QtWidgets, QtWebChannel, QtWebEngineWidgets
+#from PyQt5 import QtCore, QtWidgets, QtWebChannel, QtWebEngineWidgets
+from PyQt5 import QtCore, QtWidgets
 from stat import *
 import util
-from util.qt import injectWebviewCSS
+#from util.qt import injectWebviewCSS
 import urllib.request, urllib.parse, urllib.error
 import logging
 import os
@@ -16,12 +17,12 @@ from ui.busy_widget import BusyWidget
 logger = logging.getLogger(__name__)
 
 
-class FAFPage(QtWebEngineWidgets.QWebEnginePage):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def userAgentForUrl(self, url):
-        return "FAForever"
+#class FAFPage(QtWebEngineWidgets.QWebEnginePage):
+#    def __init__(self, *args, **kwargs):
+#        super().__init__(*args, **kwargs)
+#
+#    def userAgentForUrl(self, url):
+#        return "FAForever"
 
 
 class MapVault(QtCore.QObject, BusyWidget):
