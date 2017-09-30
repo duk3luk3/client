@@ -31,8 +31,10 @@ if __package__ is None and not hasattr(sys, 'frozen'):
         sys.path.insert(0, os.path.dirname(path))
 
 if sys.platform == 'win32':
-    os.environ.setdefault('QT_OPENGL', 'angle')
-    os.environ.setdefault('QT_ANGLE_PLATFORM', 'd3d9')
+    if not 'QT_OPENGL' in os.environ:
+        os.environ.setdefault('QT_OPENGL', 'angle')
+        if not 'QT_ANGLE_PLATORM' in os.environ:
+            os.environ.setdefault('QT_ANGLE_PLATFORM', 'd3d9')
 
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import Qt
