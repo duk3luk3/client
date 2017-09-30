@@ -17,6 +17,16 @@ Contributors:
  - Wesmania
  - Grothe
 
+0.16.1
+====
+
+* Fix decoding faf-uid return value to string on error
+* Change rendering on Windows to ANGLE/D3D
+
+Contributors:
+ - Wesmania
+ - Duke
+
 0.16.0
 ====
 
