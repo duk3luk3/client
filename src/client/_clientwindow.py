@@ -20,6 +20,7 @@ from client.playercolors import PlayerColors
 from client.theme_menu import ThemeMenu
 from client.updater import UpdateChecker, UpdateDialog
 from client.update_settings import UpdateSettingsDialog
+from client.api_dialog import ApiLoginDialog
 from client.user import User
 from downloadManager import PreviewDownloader, MAP_PREVIEW_ROOT
 import fa
@@ -208,6 +209,8 @@ class ClientWindow(FormClass, BaseClass):
         nm = QNetworkAccessManager(self)
         self.ApiManager = api.ApiManager(nm, apisettings, api.OAuthHandler(apisettings))
         self.Api = api.Api(self.ApiManager)
+        self.api_dialog = ApiLoginDialog(self)
+        self.ApiManager.authorisation_needed.connect(self.api_auth_needed)
 
         # create user interface (main window) and load theme
         self.setupUi(self)
@@ -972,7 +975,6 @@ class ClientWindow(FormClass, BaseClass):
     def on_widget_no_login(self):
         self.disconnect()
 
-
     def on_login_widget_quit(self):
         QtWidgets.QApplication.quit()
 
@@ -1004,6 +1006,10 @@ class ClientWindow(FormClass, BaseClass):
                                         session=self.session))
         self.ApiManager.authorize(login, password)
         return True
+
+    @QtCore.pyqtSlot()
+    def api_auth_needed(self):
+        self.api_dialog.show()
 
     @QtCore.pyqtSlot()
     def startedFA(self):

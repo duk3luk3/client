@@ -174,10 +174,15 @@ class PreviewDownload(QtCore.QObject):
             QtCore.QDir().rename(partpath, filepath)
             is_local = False
         self.done.emit(self, (filepath, is_local))
-
     def failed(self):
         return not self._dl.succeeded()
 
+    def _get_cachefile(self, name):
+        imgpath = os.path.join(util.CACHE_DIR, name)
+        img = QtCore.QFile(imgpath)
+        logger.debug(imgpath)
+        img.open(QtCore.QIODevice.WriteOnly)
+        return img, imgpath
 
 class PreviewDownloadRequest(QtCore.QObject):
     done = QtCore.pyqtSignal(object, object)

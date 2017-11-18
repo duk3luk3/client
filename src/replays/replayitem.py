@@ -148,7 +148,7 @@ class ReplayItem(QtWidgets.QTreeWidgetItem):
             self.mapdisplayname = message['map_displayname']
         else:
             self.mapdisplayname = maps.getDisplayName(self.mapname)
-      
+
         self.icon = maps.preview(self.mapname)
         if not self.icon:
             self.client.map_downloader.download_preview(self.mapname, self._map_dl_request)
