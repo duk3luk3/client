@@ -4,6 +4,7 @@ from PyQt5.QtNetwork import QNetworkRequest
 from chat._avatarWidget import AvatarWidget
 import time
 from urllib import parse
+from functools import partial
 
 from fa.replay import replay
 from fa import maps
@@ -424,7 +425,7 @@ class Chatter(QtWidgets.QTableWidgetItem):
             color = pcolors.getUserColor(_id, name)
         self.setForeground(QtGui.QColor(color))
 
-    def nickUsedByOther(self, resp):
+    def nickUsedByOther(self, previously, resp):
         result=''
         logger.info('nickUsedByOther api response is : '+str(resp))
         if resp.get('data')!= None and len(resp['data']) >= 1:
@@ -432,10 +433,11 @@ class Chatter(QtWidgets.QTableWidgetItem):
                 if ply['type']=='player' and ply['attributes']['login'] != self.user.name:
                         result+=(ply['attributes']['login']+'\n')
         if len(result) > 1:
-            result = 'It has been previously been used by :\n' + str(result)
+            result = 'Previously used by :\n' + str(result)
         else:
-            result='It has never been used by anyone else.'
-        QtWidgets.QMessageBox.about(self.parent, "Aliases2", str(result))
+            result='The name {} has never been used by anyone else.\n'.format(self.user.name)
+        result = result + '\n' + previously
+        QtWidgets.QMessageBox.about(self.parent, "{} Alias Check".format(self.user.name), str(result))
         return result
 
     def nickUsedByOther_error(self,resp):
@@ -452,8 +454,8 @@ class Chatter(QtWidgets.QTableWidgetItem):
         logger.info('namesPreviouslyKnownResult api response is : '+str(response))
         if len(response['data']) < 1:
             result='The name ' + self.user.name + ' has never been used or the user has never changed its name'+'\n\n'+result
+            QtWidgets.QMessageBox.about(self.parent, "Aliases", str(result))
         else:
-            result2=api.methods.nickUsedByOther(self.chat_widget.client.Api,250,1,str(self.user.name),self.nickUsedByOther,self.nickUsedByOther_error)
             if response.get('included')!= None and len(response['included']) >= 1:
                 nicklists.append('The player ' + self.user.name + ' has previously been known as :')
                 for allnicks in response['included']:
@@ -462,7 +464,8 @@ class Chatter(QtWidgets.QTableWidgetItem):
             else:
                 nicklists.append('The name '+ self.user.name +' is not currently owned by any player.')
             result='\n'.join(nicklists)+'\n\n'+result
-        QtWidgets.QMessageBox.about(self.parent, "Aliases", str(result))
+
+            result2=api.methods.nickUsedByOther(self.chat_widget.client.Api,250,1,str(self.user.name),partial(self.nickUsedByOther, result),self.nickUsedByOther_error)
         return str(result)
 
     def viewAliases(self):
@@ -542,7 +545,7 @@ class Chatter(QtWidgets.QTableWidgetItem):
                 menu_add("Close Game", lambda: self.chat_widget.client.closeFA(name))
                 menu_add("Close FAF Client", lambda: self.chat_widget.client.closeLobby(name))
 
-        menu_add("View Aliases", self.view_aliases, True)
+        menu_add("View Aliases", self.viewAliases, True)
         if player is not None:  # not for irc user
             if int(player.ladder_estimate()) != 0:  # not for 'never played ladder'
                 menu_add("View in Leaderboards", self.view_in_leaderboards)

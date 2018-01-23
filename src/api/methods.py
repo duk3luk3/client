@@ -74,7 +74,7 @@ def recent_replays(api, page_size, page_number, on_finished, on_error):
     return req
 
 #request : https://api.faforever.com/data/player?include=names&fields[player]=login,names&fields[nameRecord]=name,changeTime&&filter[player]=login==player_nick
-def namesPreviouslyKnown(api, page_size, page_number, player_nick, on_finished, on_error):
+def previous_names_used(api, page_size, page_number, player_nick, on_finished, on_error):
     req = api._get('/data/player', {
         'include': 'names',
         'fields[player]': 'login,names',
@@ -90,10 +90,12 @@ def namesPreviouslyKnown(api, page_size, page_number, player_nick, on_finished, 
     return req
 
 #request : https://api.faforever.com/data/player?include=names&filter=(login=='+self.user.name+',names.name=='+self.user.name+')'
-def nickUsedByOther(api, page_size, page_number, player_nick, on_finished, on_error):
+def other_name_users(api, page_size, page_number, player_nick, on_finished, on_error):
     searchFilter="(login=='"+player_nick+"',names.name=='"+player_nick+"')"
     req = api._get('/data/player', {
         'include': 'names',
+        'fields[player]': 'login,names',
+        'fields[nameRecord]': 'name,changeTime',
         'filter': searchFilter,
         'page[size]': page_size,
         'page[number]': page_number

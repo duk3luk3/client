@@ -5,10 +5,12 @@ import json
 import copy
 import time
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSignal
 
 import logging
 logger = logging.getLogger(__name__)
 
+import api.methods
 
 class ApiError(Exception):
     def __init__(self, reason):
@@ -16,100 +18,99 @@ class ApiError(Exception):
         self.reason = reason
 
 
-class AliasViewer:
-    def __init__(self):
-        pass
+class AliasFinder(QObject):
+    finished = pyqtSignal(list, list)
 
-    # TODO refactor once async api is implemented
-    def _api_request(self, link):
-        try:
-            with urllib.request.urlopen(link) as response:
-                return json.loads(response.read().decode())
-        except urllib.error.URLError as e:
-            raise ApiError("Failed to get link {}: {}".format(link, e.reason))
-        except json.decoder.JSONDecodeError as e:
-            raise ApiError("Failed to decode incoming JSON")
+    def __init__(self, client, *args, **kwargs):
+        QObject.__init__(self, *args, **kwargs)
+        self.client = client
+        self.previous_names = None
+        self.other_users = None
+
+        self._player_name = None
+
+    def check_finish(self):
+        if self.previous_names != None and self.other_users != None:
+            self.finished.emit(self.previous_names, self.other_users)
+
+    def previous_names_result(self, response):
+        data = response.get('data')
+        if not data:
+            self.previous_names = ApiError('The name {} has never been used')
+        else:
+            included = response.get('included')
+            if included:
+                self.previous_names = [
+                        {
+                            'name': rec['attributes']['name'], 
+                            'time': self._parse_time(rec['attributes']['changeTime'])
+                        } for rec in included if rec['type'] == 'nameRecord'
+                    ]
+            else:
+                self.previous_names = []
+        self.check_finish()
+
+    def previous_names_error(self, response):
+        self.previous_names = ApiError(response)
+        self.check_finish()
+
+    def other_name_users_result(self, response):
+        data = response.get('data')
+        included = response.get('included', [])
+
+        # invert included
+        included_dict = {}
+        for record in included:
+            if not record['type'] in included_dict:
+                included_dict[record['type']] = {}
+            id = record['id']
+            included_dict[record['type']][id] = record
+
+        def find_change_time(player_rec):
+            nameRecord_ids = [
+                    rec['id']
+                    for rec in player_rec['relationships']['names'] if
+                    rec['type'] == 'nameRecord'
+                ]
+            nameRecords = [included_dict['nameRecord'][id] for id in nameRecords_ids]
+            for nameRecord in nameRecords:
+                if nameRecord['attributes']['name'] == player_rec['attributes']['login']:
+                    return self._parse_time(nameRecord['attributes']['changeTime'])
+
+        if not data:
+            self.other_users = []
+        else:
+            self.other_users = [
+                    {
+                        'name': rec['attributes']['login'],
+                        'id': rec['id'],
+                        'time': find_change_time(rec)
+
+                    }
+                    for rec in data if
+                    rec['type'] == 'player' and rec['attributes']['login'] != self_player_name
+                ]
+        self.check_finish()
+
+
+    def other_name_users_error(self, response):
+        self.other_users = ApiError(response)
+        self.check_finish()
+
+    def run(self, player_name):
+        self._player_name = player_name
+        api.methods.previous_names_used(client.Api, 250, 1, player_name,
+            self.previous_names_result,
+            self.previous_names_error)
+        api.methods.other_name_users(client.Api, 250, 1, player_name,
+            self.other_name_users_result,
+            self.other_name_users_error)
 
     def _parse_time(self, t):
-        return time.strptime(t, "%Y-%m-%dT%H:%M:%SZ")
-
-    def player_id_by_name(self, checked_name):
-        api_link = 'https://api.faforever.com/data/player' \
-                   '?filter=login=={name}' \
-                   '&fields[player]='
-        query = api_link.format(name=checked_name)
-        response = self._api_request(query)
-        if response is None or len(response['data']) == 0:
+        try:
+            return time.strptime(t, "%Y-%m-%dT%H:%M:%SZ")
+        except ValueError:
             return None
-        return int(response['data'][0]['id'])
-
-    def names_previously_known(self, user_id):
-        api_link = 'https://api.faforever.com/data/player/{id_}' \
-                   '?include=names' \
-                   '&fields[player]=login' \
-                   '&fields[nameRecord]=name,changeTime'
-        query = api_link.format(id_=user_id)
-        response = self._api_request(query)
-        if response is None or 'included' not in response:
-            return []
-
-        aliases = []
-        for name in response['included']:
-            if name['type'] != 'nameRecord':
-                continue
-            nick_name = name['attributes']['name']
-            try:
-                nick_time = self._parse_time(name['attributes']['changeTime'])
-            except ValueError:
-                continue
-            aliases.append({'name': nick_name, 'time': nick_time})
-
-        player = response['data']
-        aliases.append({'name': player['attributes']['login'],
-                        'time': None})
-        return aliases
-
-    def name_used_by_others(self, checked_name):
-        api_link = 'https://api.faforever.com/data/player' \
-                   '?include=names' \
-                   '&filter=(login=={name},names.name=={name})' \
-                   '&fields[player]=login,names' \
-                   '&fields[nameRecord]=name,changeTime'
-        query = api_link.format(name=checked_name)
-        response = self._api_request(query)
-        if response is None or 'data' not in response:
-            return []
-
-        players = [p for p in response['data'] if p['type'] == 'player']
-        if 'included' not in response:
-            names = []
-        else:
-            names = [n for n in response['included'] if n['type'] == 'nameRecord'
-                     and n['attributes']['name'] == checked_name]
-        result = []
-
-        for p in players:
-            p_login = p['attributes']['login']
-            p_id = p['id']
-            if 'relationships' not in p:
-                p_name_ids = []
-            else:
-                p_name_ids = set(n['id'] for n in p['relationships']['names']['data'])
-            p_names = [n for n in names if n['id'] in p_name_ids]
-            result_entry = {'name': p_login, 'id': p_id}
-
-            if p_login == checked_name:
-                result_entry['time'] = None
-                result.append(copy.copy(result_entry))
-            for name in p_names:
-                try:
-                    t = self._parse_time(name['attributes']['changeTime'])
-                    result_entry['time'] = t
-                    result.append(copy.copy(result_entry))
-                except ValueError:
-                    continue
-        return result
-
 
 class AliasFormatter:
     def __init__(self):
